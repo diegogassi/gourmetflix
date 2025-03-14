@@ -4,7 +4,7 @@ const Lector = () => {
   return (
     <div>
       <h1>📖 Lector de EPUB</h1>
-      <EpubReader fileUrl="/libros/pg1342-images.epub" />
+      <EpubReader fileUrl="/libros/los-piojos-en-los-90.epub" />
     </div>
   );
 };
