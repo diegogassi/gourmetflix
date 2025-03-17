@@ -12,12 +12,13 @@ export default function Catalogo() {
     const fetchLibros = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "libros"));
-        const librosLista = [];
-        querySnapshot.forEach((doc) => {
-          librosLista.push({ id: doc.id, ...doc.data() });
-        });
+        const librosLista = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
         setLibros(librosLista);
       } catch (err) {
+        console.error("❌ Error al obtener libros:", err);
         setError("Error al cargar los libros.");
       }
     };
@@ -30,7 +31,7 @@ export default function Catalogo() {
 
   return (
     <div style={containerStyle}>
-      <h1>Catálogo de Libros</h1>
+      <h1>📚 Catálogo de Libros</h1>
       <div style={gridStyle}>
         {libros.map((libro) => (
           <div key={libro.id} style={cardStyle}>
@@ -38,11 +39,16 @@ export default function Catalogo() {
               src={libro.portada} 
               alt={libro.titulo} 
               style={coverStyle} 
-              onClick={() => router.push(`/libro/${libro.id}`)}
+              onClick={() => router.push(`/detalle/${libro.id}`)}
             />
             <h3>{libro.titulo}</h3>
             <p>{libro.autor}</p>
-            <button onClick={() => router.push(`/libro/${libro.id}`)} style={buttonStyle}>Ver Detalle</button>
+            <button 
+              onClick={() => router.push(`/detalle/${libro.id}`)} 
+              style={buttonStyle}
+            >
+              Ver Detalles
+            </button>
           </div>
         ))}
       </div>
