@@ -43,7 +43,10 @@ export default function DetalleLibro() {
       <div dangerouslySetInnerHTML={{ __html: libro.descripcion }} />
 
       <button 
-        onClick={() => router.push(`/lector?file=${encodeURIComponent(libro.fileUrl)}`)}
+        onClick={() => {
+          console.log("📂 Abriendo libro:", libro.url); // <-- Depuración en consola
+          router.push(`/lector?file=${encodeURIComponent(libro.url)}`);
+        }}
         style={buttonStyle}
       >
         📖 Leer Libro
