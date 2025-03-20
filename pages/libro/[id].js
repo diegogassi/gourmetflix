@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { db } from "../../firebaseConfig";
+import { db } from "@/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 
 export default function DetalleLibro() {
