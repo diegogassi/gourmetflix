@@ -2,16 +2,18 @@
 
 ✅ Funcionalidades confirmadas para la v1.0
 
-1️⃣ Restricción de acceso a libros para usuarios sin membresía activa. (✔ Implementado manualmente)
-2️⃣ Página de membresía (/membresia) con información sobre el plan y futuro pago automatizado.
-3️⃣ Google Login para permitir autenticación con cuenta de Google.
-4️⃣ Restablecimiento de contraseña olvidada.
-5️⃣ Verificación de email después del registro (para evitar registros falsos).
-6️⃣ Header en todas las páginas con un pequeño logo y un menú de navegación.
-7️⃣ Página de perfil de usuario (/perfil) para modificar datos personales, email y contraseña. (✔ Implementado)
-8️⃣ Página de administración de usuarios (/admin) donde los administradores pueden gestionar membresías y permisos. (✔ Implementado)
-9️⃣ Implementación de Stripe o MercadoPago para pagar y activar membresías automáticamente.
-10️⃣ Mejoras en la UX/UI de todas las páginas, incluyendo estilos, botones, y experiencia del lector de EPUB.
+1- Restricción de acceso a libros para usuarios sin membresía activa. (✔ Implementado manualmente)
+2- Página de membresía (/membresia) con información sobre el plan y futuro pago automatizado.
+3- Google Login para permitir autenticación con cuenta de Google.
+4- Restablecimiento de contraseña olvidada.
+5- Verificación de email después del registro (para evitar registros falsos).
+6- Header en todas las páginas con un pequeño logo y un menú de navegación.
+7- Página de perfil de usuario (/perfil) para modificar datos personales, email y contraseña. (✔ Implementado)
+8️- Implementación de Stripe o MercadoPago para pagar y activar membresías automáticamente.
+9- Mejoras en la UX/UI de todas las páginas, incluyendo estilos, botones, y experiencia del lector de EPUB.
+10- Opción de cambiar la dirección de email en /perfil
+11- Corregir en /registro que da error cuando se intenta registrar un mail que ya estaba registrado anteriormente
+
 
 ✅ Mejoras en el lector EPUB
 
@@ -28,6 +30,10 @@ Mejorar la interfaz de los botones de navegación.
 Posible implementación del índice de capítulos.
 
 Optimizar la experiencia de lectura con más ajustes visuales.
+
+
+
+
 
 ✅ Funcionalidades post-v1.0 (posible v2.0)
 

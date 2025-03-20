@@ -59,7 +59,7 @@ export default function Membresia() {
   };
 
   return (
-    <div style={{ padding: "20px", textAlign: "center" }}>
+    <div style={containerStyle}>
       <h1>Estado de Membresía</h1>
       <p>{mensaje}</p>
       {!membresiaActiva && (
@@ -67,9 +67,27 @@ export default function Membresia() {
           Activar Membresía
         </button>
       )}
+
+      {/* Botones de navegación */}
+      <div style={buttonContainer}>
+        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Página Principal</button>
+        <button onClick={() => router.push("/perfil")} style={buttonStyle}>👤 Mi Perfil</button>
+      </div>
     </div>
   );
 }
+
+const containerStyle = {
+  padding: "20px",
+  textAlign: "center",
+};
+
+const buttonContainer = {
+  display: "flex",
+  justifyContent: "center",
+  gap: "20px",
+  marginTop: "20px",
+};
 
 const buttonStyle = {
   padding: "10px 15px",

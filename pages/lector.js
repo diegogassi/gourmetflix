@@ -20,7 +20,7 @@ export default function Lector() {
     if (viewer) {
       const newRendition = newBook.renderTo(viewer, {
         width: "100%",
-        height: "75vh", // Ajustamos la altura del visor para dejar espacio a los botones
+        height: "75vh",
         flow: "paginated",
       });
 
@@ -43,13 +43,13 @@ export default function Lector() {
 
   return (
     <div style={containerStyle}>
-      
       {/* Visor del libro */}
       <div id="viewer" style={viewerStyle}></div>
-      
-      {/* Contenedor de los botones para que siempre queden visibles */}
-      <div style={buttonContainerStyle}>
-      <button onClick={() => router.push("/catalogo")} style={buttonStyle2}>Catálogo</button>
+
+      {/* Contenedor de botones */}
+      <div style={buttonContainer}>
+        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Página Principal</button>
+        <button onClick={() => router.push("/catalogo")} style={buttonStyle}>📚 Catálogo</button>
         <button onClick={prevPage} style={buttonStyle}>⬅ Anterior</button>
         <button onClick={nextPage} style={buttonStyle}>Siguiente ➡</button>
       </div>
@@ -65,41 +65,29 @@ const containerStyle = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "space-between", // Asegura que los botones queden dentro de la vista
+  justifyContent: "space-between",
 };
 
 const viewerStyle = {
   width: "100%",
-  height: "75vh", // Reducimos un poco la altura del lector
+  height: "75vh",
   border: "1px solid black",
 };
 
-const buttonContainerStyle = {
-  width: "100%",
+const buttonContainer = {
   display: "flex",
   justifyContent: "center",
-  padding: "100px 0 10px 0", // Agregamos un poco de margen arriba y abajo
-  backgroundColor: "#fff", // Fondo blanco para que no se superponga con el lector
+  gap: "20px",
+  padding: "20px 0",
+  backgroundColor: "#fff",
 };
 
 const buttonStyle = {
-  padding: "10px 5%",
+  padding: "10px 15px",
   fontSize: "16px",
   border: "none",
   cursor: "pointer",
   backgroundColor: "#007bff",
   color: "white",
   borderRadius: "5px",
-  margin: "0 10px", // Espaciado entre botones
-};
-
-const buttonStyle2 = {
-  padding: "10px 20px",
-  fontSize: "16px",
-  border: "none",
-  cursor: "pointer",
-  backgroundColor: "#007bff",
-  color: "white",
-  borderRadius: "5px",
-  margin: "0 10px", // Espaciado entre botones
 };

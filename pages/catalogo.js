@@ -9,48 +9,42 @@ export default function Catalogo() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchLibros = async () => {
+    const obtenerLibros = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "libros"));
-        const librosLista = querySnapshot.docs.map(doc => ({
+        const librosData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
-        setLibros(librosLista);
+        setLibros(librosData);
       } catch (err) {
-        console.error("❌ Error al obtener libros:", err);
+        console.error("❌ Error al cargar los libros:", err);
         setError("Error al cargar los libros.");
       }
     };
 
-    fetchLibros();
+    obtenerLibros();
   }, []);
 
   if (error) return <p>{error}</p>;
-  if (!libros.length) return <p>Cargando catálogo...</p>;
+  if (!libros.length) return <p>Cargando libros...</p>;
 
   return (
     <div style={containerStyle}>
       <h1>📚 Catálogo de Libros</h1>
-      <div style={gridStyle}>
+      <div style={bookContainerStyle}>
         {libros.map((libro) => (
-          <div key={libro.id} style={cardStyle}>
-            <img 
-              src={libro.portada} 
-              alt={libro.titulo} 
-              style={coverStyle} 
-              onClick={() => router.push(`/detalle/${libro.id}`)}
-            />
-            <h3>{libro.titulo}</h3>
-            <p>{libro.autor}</p>
-            <button 
-              onClick={() => router.push(`/detalle/${libro.id}`)} 
-              style={buttonStyle}
-            >
-              Ver Detalles
-            </button>
+          <div key={libro.id} style={bookStyle} onClick={() => router.push(`/detalle/${libro.id}`)}>
+            <img src={libro.portada} alt={libro.titulo} style={coverStyle} />
+            <p>{libro.titulo}</p>
           </div>
         ))}
+      </div>
+
+      {/* Botones de navegación */}
+      <div style={buttonContainer}>
+        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Página Principal</button>
+        <button onClick={() => router.push("/perfil")} style={buttonStyle}>👤 Mi Perfil</button>
       </div>
     </div>
   );
@@ -63,36 +57,43 @@ const containerStyle = {
   minHeight: "100vh",
 };
 
-const gridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+const bookContainerStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  justifyContent: "center",
   gap: "20px",
-  padding: "20px",
 };
 
-const cardStyle = {
-  backgroundColor: "white",
-  padding: "15px",
+const bookStyle = {
+  cursor: "pointer",
+  border: "1px solid #ddd",
+  padding: "10px",
   borderRadius: "8px",
-  boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
+  backgroundColor: "#fff",
   textAlign: "center",
+  width: "200px",
 };
 
 const coverStyle = {
   width: "100%",
-  height: "auto",
-  cursor: "pointer",
-  borderRadius: "5px",
-  boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
+  height: "250px",
+  objectFit: "cover",
+};
+
+const buttonContainer = {
+  display: "flex",
+  justifyContent: "center",
+  gap: "20px",
+  marginTop: "20px",
 };
 
 const buttonStyle = {
   padding: "10px 15px",
   fontSize: "16px",
-  margin: "10px 0",
   border: "none",
   cursor: "pointer",
   backgroundColor: "#007bff",
   color: "white",
   borderRadius: "5px",
 };
+

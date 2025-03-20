@@ -1,92 +1,174 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { auth } from "../firebaseConfig";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth, db } from "../firebaseConfig";
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
-export default function LoginPage() {
+export default function Login() {
   const router = useRouter();
+  const [usuario, setUsuario] = useState(null);
+  const [nombreUsuario, setNombreUsuario] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSignUp = async () => {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUsuario(user);
+        await obtenerNombreUsuario(user.email);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const obtenerNombreUsuario = async (email) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      router.push("/catalogo");
+      const docRef = doc(db, "usuarios", email);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setNombreUsuario(data.nombre || "Usuario");
+      }
     } catch (err) {
-      setError("Error al registrar usuario. Verifica los datos ingresados.");
+      console.error("❌ Error al obtener el nombre:", err);
+      setNombreUsuario("Usuario");
     }
   };
 
-  const handleSignIn = async () => {
+  const iniciarSesion = async () => {
+    setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/catalogo");
+      setUsuario(auth.currentUser);
     } catch (err) {
-      setError("Correo o contraseña incorrectos. Inténtalo nuevamente.");
+      console.error("❌ Error al iniciar sesión:", err);
+      setError("Credenciales incorrectas. Verifica tu email y contraseña.");
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut(auth);
-    router.push("/login");
+  const cerrarSesion = async () => {
+    try {
+      await signOut(auth);
+      setUsuario(null);
+    } catch (err) {
+      console.error("❌ Error al cerrar sesión:", err);
+    }
   };
 
   return (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      <h1>Iniciar Sesión</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <input
-        type="email"
-        placeholder="Correo electrónico"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={inputStyle}
-      />
-      <br />
-      <div style={{ position: "relative", display: "inline-block" }}>
-        <input
-          type={showPassword ? "text" : "password"}
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={inputStyle}
-        />
-        <button
-          onClick={() => setShowPassword(!showPassword)}
-          style={toggleButtonStyle}
-        >
-          {showPassword ? "🙈" : "👁"}
-        </button>
+    <div style={containerStyle}>
+      <h1>🔑 Iniciar Sesión</h1>
+
+      {usuario ? (
+        <>
+          <p>Hola, <strong>{nombreUsuario}</strong></p>
+          <div style={buttonStack}>
+            <button onClick={cerrarSesion} style={logoutButtonStyle}>❌ Cerrar Sesión</button>
+            <button onClick={() => router.push("/perfil")} style={buttonStyle}>👤 Mi Perfil</button>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Contenedor para alinear "Correo" y "Contraseña" en la misma línea */}
+          <div style={inputRow}>
+            <input
+              type="email"
+              placeholder="Correo electrónico"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+            />
+
+            {/* Contenedor para la contraseña con el ícono */}
+            <div style={passwordContainer}>
+              <input
+                type={mostrarPassword ? "text" : "password"}
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={inputStyle}
+              />
+              <button 
+                onClick={() => setMostrarPassword(!mostrarPassword)} 
+                style={togglePasswordButton}
+              >
+                {mostrarPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
+          </div>
+
+          {/* Botones de Login y Registro centrados */}
+          <div style={buttonStack}>
+            <button onClick={iniciarSesion} style={buttonStyle}>Iniciar Sesión</button>
+            <button onClick={() => router.push("/registro")} style={registerButtonStyle}>
+              ¿No tenés cuenta? Registrate
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Botón para ir a la página principal */}
+      <div style={{ textAlign: "center", marginTop: "20px" }}>
+        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Página Principal</button>
       </div>
-      <br />
-      <button onClick={handleSignUp} style={buttonStyle}>Registrarse</button>
-      <button onClick={handleSignIn} style={buttonStyle}>Iniciar Sesión</button>
-      <br />
-      <button onClick={handleSignOut} style={logoutButtonStyle}>Cerrar Sesión</button>
     </div>
   );
 }
 
+const containerStyle = {
+  textAlign: "center",
+  padding: "20px",
+  backgroundColor: "#f8f8f8",
+  minHeight: "100vh",
+};
+
+const inputRow = {
+  display: "flex",
+  justifyContent: "center",
+  gap: "10px",
+  marginBottom: "15px",
+};
+
 const inputStyle = {
   padding: "10px",
-  margin: "5px",
   fontSize: "16px",
-  width: "250px",
+  width: "220px",
   borderRadius: "5px",
-  border: "1px solid #ddd",
+  border: "1px solid #ccc",
+};
+
+const passwordContainer = {
+  display: "flex",
+  alignItems: "center",
+  position: "relative",
+};
+
+const togglePasswordButton = {
+  marginLeft: "5px",
+  backgroundColor: "transparent",
+  border: "none",
+  fontSize: "18px",
+  cursor: "pointer",
+};
+
+const buttonStack = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "10px", // Espaciado entre los botones
 };
 
 const buttonStyle = {
   padding: "10px 15px",
   fontSize: "16px",
-  margin: "5px",
   border: "none",
   cursor: "pointer",
   backgroundColor: "#007bff",
   color: "white",
   borderRadius: "5px",
+  width: "250px",
 };
 
 const logoutButtonStyle = {
@@ -94,13 +176,7 @@ const logoutButtonStyle = {
   backgroundColor: "#dc3545",
 };
 
-const toggleButtonStyle = {
-  position: "absolute",
-  right: "10px",
-  top: "50%",
-  transform: "translateY(-50%)",
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "18px",
+const registerButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#28a745",
 };
