@@ -30,25 +30,40 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/admin.js"
     ],
-    "/admin/libros": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/admin/libros.js"
-    ],
     "/admin/usuarios": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/admin/usuarios.js"
+    ],
+    "/catalogo": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/catalogo.js"
+    ],
+    "/detalle/[id]": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/detalle/[id].js"
+    ],
+    "/lector": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/lector.js"
     ],
     "/login": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/login.js"
     ],
-    "/registro": [
+    "/membresia": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/registro.js"
+      "static/chunks/pages/membresia.js"
+    ],
+    "/perfil": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/perfil.js"
     ]
   },
   "ampFirstPages": []

@@ -1,11 +1,14 @@
 {
   "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/registro": "pages/registro.js",
+  "/_error": "pages/_error.js",
+  "/detalle/[id]": "pages/detalle/[id].js",
+  "/login": "pages/login.js",
   "/": "pages/index.js",
+  "/perfil": "pages/perfil.js",
   "/admin": "pages/admin.js",
   "/admin/usuarios": "pages/admin/usuarios.js",
-  "/admin/libros": "pages/admin/libros.js",
-  "/login": "pages/login.js"
+  "/catalogo": "pages/catalogo.js",
+  "/membresia": "pages/membresia.js",
+  "/lector": "pages/lector.js"
 }

@@ -1,22 +1,64 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import ePub from "epubjs";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, db } from "../firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
+import { guardarPosicionLectura, obtenerPosicionLectura } from "../utils/lectura";
 
 export default function Lector() {
   const router = useRouter();
   const { file } = router.query;
   const [rendition, setRendition] = useState(null);
   const [book, setBook] = useState(null);
+  const [uid, setUid] = useState(null);
 
   useEffect(() => {
-    if (!file) return;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
 
-    console.log("📖 Archivo EPUB recibido en el lector:", file);
+      try {
+        const docRef = doc(db, "usuarios", user.uid);
+        const snap = await getDoc(docRef);
 
+        if (!snap.exists()) {
+          console.error("❌ Usuario no encontrado en Firestore");
+          alert("Tu usuario no está registrado correctamente. Contactá a soporte.");
+          router.push("/login");
+          return;
+        }
+
+        const userData = snap.data();
+
+        if (!userData.membresiaActiva) {
+          alert("Necesitás una membresía activa para leer los libros 📚");
+          router.push("/membresia");
+          return;
+        }
+
+        setUid(user.uid);
+      } catch (error) {
+        console.error("⚠️ Error al verificar la membresía:", error);
+        alert("Error al verificar la membresía.");
+        router.push("/login");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!file || !uid) return;
+
+    const fileName = file.split("/").pop();
     const newBook = ePub(file);
     setBook(newBook);
 
     const viewer = document.getElementById("viewer");
+
     if (viewer) {
       const newRendition = newBook.renderTo(viewer, {
         width: "100%",
@@ -24,32 +66,33 @@ export default function Lector() {
         flow: "paginated",
       });
 
-      newRendition.display();
       setRendition(newRendition);
-    }
-  }, [file]);
 
-  const nextPage = () => {
-    if (rendition) {
-      rendition.next();
-    }
-  };
+      obtenerPosicionLectura(uid, fileName).then((ultimaPosicion) => {
+        if (ultimaPosicion) {
+          newRendition.display(ultimaPosicion);
+        } else {
+          newRendition.display();
+        }
+      });
 
-  const prevPage = () => {
-    if (rendition) {
-      rendition.prev();
+      newRendition.on("relocated", (location) => {
+        const cfi = location.start.cfi;
+        guardarPosicionLectura(uid, fileName, cfi);
+      });
     }
-  };
+  }, [file, uid]);
+
+  const nextPage = () => rendition && rendition.next();
+  const prevPage = () => rendition && rendition.prev();
 
   return (
     <div style={containerStyle}>
-      {/* Visor del libro */}
       <div id="viewer" style={viewerStyle}></div>
 
-      {/* Contenedor de botones */}
-      <div style={buttonContainer}>
-        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Página Principal</button>
-        <button onClick={() => router.push("/catalogo")} style={buttonStyle}>📚 Catálogo</button>
+      <div style={buttonContainerStyle}>
+        <button onClick={() => router.push("/")} style={buttonStyle2}>🏠 Página principal</button>
+        <button onClick={() => router.push("/catalogo")} style={buttonStyle2}>📚 Catálogo</button>
         <button onClick={prevPage} style={buttonStyle}>⬅ Anterior</button>
         <button onClick={nextPage} style={buttonStyle}>Siguiente ➡</button>
       </div>
@@ -74,20 +117,33 @@ const viewerStyle = {
   border: "1px solid black",
 };
 
-const buttonContainer = {
+const buttonContainerStyle = {
+  width: "100%",
   display: "flex",
   justifyContent: "center",
-  gap: "20px",
-  padding: "20px 0",
+  padding: "80px 0 10px 0",
   backgroundColor: "#fff",
+  flexWrap: "wrap",
 };
 
 const buttonStyle = {
-  padding: "10px 15px",
+  padding: "10px 5%",
   fontSize: "16px",
   border: "none",
   cursor: "pointer",
   backgroundColor: "#007bff",
   color: "white",
   borderRadius: "5px",
+  margin: "0 10px",
+};
+
+const buttonStyle2 = {
+  padding: "10px 20px",
+  fontSize: "16px",
+  border: "none",
+  cursor: "pointer",
+  backgroundColor: "#007bff",
+  color: "white",
+  borderRadius: "5px",
+  margin: "0 10px",
 };
