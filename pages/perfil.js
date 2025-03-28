@@ -1,220 +1,205 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { db, auth } from "../firebaseConfig";
-import { onAuthStateChanged, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
+import {
+  onAuthStateChanged,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  updateDoc
+} from "firebase/firestore";
 
 export default function Perfil() {
   const router = useRouter();
   const [usuario, setUsuario] = useState(null);
-  const [perfil, setPerfil] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoApellido, setNuevoApellido] = useState("");
   const [passwordActual, setPasswordActual] = useState("");
   const [nuevaPassword, setNuevaPassword] = useState("");
-  const [mostrarPasswordActual, setMostrarPasswordActual] = useState(false);
-  const [mostrarNuevaPassword, setMostrarNuevaPassword] = useState(false);
-  const [error, setError] = useState(null);
-  const [mensaje, setMensaje] = useState(null);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUsuario(user);
-        await cargarPerfil(user.email);
-      } else {
+      if (!user) {
         router.push("/login");
+        return;
+      }
+
+      try {
+        const ref = doc(db, "usuarios", user.uid);
+        const snap = await getDoc(ref);
+
+        if (snap.exists()) {
+          const datos = snap.data();
+          setUsuario({
+            uid: user.uid,
+            email: user.email,
+            ...datos,
+          });
+          setNuevoNombre(datos.nombre || "");
+          setNuevoApellido(datos.apellido || "");
+        } else {
+          setUsuario(null);
+        }
+      } catch (err) {
+        console.error("❌ Error al cargar datos:", err);
+        setUsuario(null);
+      } finally {
+        setLoading(false);
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  const cargarPerfil = async (email) => {
-    try {
-      const docRef = doc(db, "usuarios", email);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setPerfil(data);
-        setNuevoNombre(data.nombre || "");
-        setNuevoApellido(data.apellido || "");
-      } else {
-        setError("No se encontró información del usuario.");
-      }
-    } catch (err) {
-      console.error("❌ Error al obtener el perfil:", err);
-      setError("Error al cargar el perfil.");
-    }
-  };
-
   const actualizarPerfil = async () => {
-    if (!nuevoNombre || !nuevoApellido) {
-      setError("Por favor, completa todos los campos.");
-      return;
-    }
-
+    if (!usuario) return;
     try {
-      const userDocRef = doc(db, "usuarios", usuario.email);
-      await updateDoc(userDocRef, {
+      const ref = doc(db, "usuarios", usuario.uid);
+      await updateDoc(ref, {
         nombre: nuevoNombre,
         apellido: nuevoApellido,
       });
-
-      setMensaje("✅ Perfil actualizado correctamente.");
-      setError(null);
+      alert("✅ Perfil actualizado correctamente.");
     } catch (err) {
       console.error("❌ Error al actualizar el perfil:", err);
-      setError("Error al actualizar el perfil.");
+      alert("Error al actualizar el perfil.");
     }
   };
 
-  const actualizarPassword = async () => {
-    if (!passwordActual || !nuevaPassword) {
-      setError("Por favor, ingresa tu contraseña actual y la nueva.");
-      return;
-    }
-
+  const cambiarPassword = async () => {
+    if (!usuario || !passwordActual || !nuevaPassword) return;
     try {
-      const credential = EmailAuthProvider.credential(usuario.email, passwordActual);
-      await reauthenticateWithCredential(usuario, credential);
-
-      await updatePassword(usuario, nuevaPassword);
-
-      setMensaje("✅ Contraseña actualizada correctamente.");
-      setError(null);
-    } catch (err) {
-      console.error("❌ Error al actualizar la contraseña:", err);
-      setError("Error al actualizar la contraseña. Verifica tu contraseña actual.");
+      const user = auth.currentUser;
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        passwordActual
+      );
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, nuevaPassword);
+      alert("✅ Contraseña actualizada correctamente.");
+      setPasswordActual("");
+      setNuevaPassword("");
+    } catch (error) {
+      console.error("❌ Error al cambiar contraseña:", error);
+      alert("Error al cambiar la contraseña. Verificá tu contraseña actual.");
     }
   };
 
-  if (error) return <p>{error}</p>;
-  if (!perfil) return <p>Cargando perfil...</p>;
+  if (loading) return <p>Cargando perfil...</p>;
+  if (!usuario) return <p>No se encontró información del usuario.</p>;
 
   return (
     <div style={containerStyle}>
-      <h1>👤 Mi Perfil</h1>
+      <h2>👤 Mi Perfil</h2>
+      <p><strong>Email:</strong> {usuario.email}</p>
 
-      <h2>📝 Editar Información</h2>
-      <input
-        type="text"
-        placeholder="Nombre"
-        value={nuevoNombre}
-        onChange={(e) => setNuevoNombre(e.target.value)}
-        style={inputStyle}
-      />
-      <input
-        type="text"
-        placeholder="Apellido"
-        value={nuevoApellido}
-        onChange={(e) => setNuevoApellido(e.target.value)}
-        style={inputStyle}
-      />
-      <button onClick={actualizarPerfil} style={buttonStyle}>Actualizar Perfil</button>
-
-      <h2>🔒 Cambiar Contraseña</h2>
-      <div style={passwordWrapper}>
-        <div style={passwordContainer}>
-          <input
-            type={mostrarPasswordActual ? "text" : "password"}
-            placeholder="Contraseña actual"
-            value={passwordActual}
-            onChange={(e) => setPasswordActual(e.target.value)}
-            style={inputStyle}
-          />
-          <button 
-            onClick={() => setMostrarPasswordActual(!mostrarPasswordActual)} 
-            style={togglePasswordButton}
-          >
-            {mostrarPasswordActual ? "🙈" : "👁️"}
-          </button>
-        </div>
-
-        <div style={passwordContainer}>
-          <input
-            type={mostrarNuevaPassword ? "text" : "password"}
-            placeholder="Nueva contraseña"
-            value={nuevaPassword}
-            onChange={(e) => setNuevaPassword(e.target.value)}
-            style={inputStyle}
-          />
-          <button 
-            onClick={() => setMostrarNuevaPassword(!mostrarNuevaPassword)} 
-            style={togglePasswordButton}
-          >
-            {mostrarNuevaPassword ? "🙈" : "👁️"}
-          </button>
-        </div>
-
-        <button onClick={actualizarPassword} style={buttonStyle}>Actualizar</button>
+      <div style={formGroupStyle}>
+        <label>Nombre:</label>
+        <input
+          type="text"
+          value={nuevoNombre}
+          onChange={(e) => setNuevoNombre(e.target.value)}
+          style={inputStyle}
+        />
       </div>
 
-      {mensaje && <p style={{ color: "green" }}>{mensaje}</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      <div style={formGroupStyle}>
+        <label>Apellido:</label>
+        <input
+          type="text"
+          value={nuevoApellido}
+          onChange={(e) => setNuevoApellido(e.target.value)}
+          style={inputStyle}
+        />
+      </div>
 
-      {/* Botones "Volver a la Página Principal" y "Volver al Catálogo" */}
-      <div style={buttonContainer}>
-        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Página Principal</button>
-        <button onClick={() => router.push("/catalogo")} style={buttonStyle}>📚 Volver al Catálogo</button>
+      <button onClick={actualizarPerfil} style={buttonStyle}>
+        Guardar cambios
+      </button>
+
+      <hr style={{ margin: "30px 0" }} />
+
+      <h3>🔐 Cambiar contraseña</h3>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+        <input
+          type={mostrarPassword ? "text" : "password"}
+          placeholder="Contraseña actual"
+          value={passwordActual}
+          onChange={(e) => setPasswordActual(e.target.value)}
+          style={inputStyle}
+        />
+        <input
+          type={mostrarPassword ? "text" : "password"}
+          placeholder="Nueva contraseña"
+          value={nuevaPassword}
+          onChange={(e) => setNuevaPassword(e.target.value)}
+          style={inputStyle}
+        />
+        <button onClick={() => setMostrarPassword(!mostrarPassword)} style={toggleBtn}>
+          {mostrarPassword ? "🙈" : "👁"}
+        </button>
+        <button onClick={cambiarPassword} style={buttonStyle}>
+          Actualizar
+        </button>
+      </div>
+
+      <div style={footerStyle}>
+        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Volver a la página principal</button>
+        <button onClick={() => router.push("/catalogo")} style={buttonStyle}>📚 Volver al catálogo</button>
       </div>
     </div>
   );
 }
 
 const containerStyle = {
-  textAlign: "center",
+  maxWidth: "600px",
+  margin: "0 auto",
   padding: "20px",
-  backgroundColor: "#f8f8f8",
-  minHeight: "100vh",
+  backgroundColor: "#f9f9f9",
+  borderRadius: "10px",
+  textAlign: "center",
+};
+
+const formGroupStyle = {
+  marginBottom: "15px",
 };
 
 const inputStyle = {
+  width: "100%",
   padding: "10px",
   fontSize: "16px",
-  margin: "10px",
-  width: "250px",
   borderRadius: "5px",
   border: "1px solid #ccc",
 };
 
-const passwordWrapper = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "10px",
-  marginTop: "10px",
-};
-
-const passwordContainer = {
-  display: "flex",
-  alignItems: "center",
-  position: "relative",
-};
-
-const togglePasswordButton = {
-  marginLeft: "5px",
-  backgroundColor: "transparent",
-  border: "none",
-  fontSize: "18px",
-  cursor: "pointer",
-};
-
 const buttonStyle = {
-  padding: "10px 15px",
+  padding: "10px 20px",
+  marginTop: "10px",
   fontSize: "16px",
-  border: "none",
-  cursor: "pointer",
   backgroundColor: "#007bff",
   color: "white",
+  border: "none",
   borderRadius: "5px",
-  margin: "10px",
+  cursor: "pointer",
 };
 
-const buttonContainer = {
+const toggleBtn = {
+  padding: "8px",
+  fontSize: "20px",
+  backgroundColor: "transparent",
+  border: "none",
+  cursor: "pointer",
+};
+
+const footerStyle = {
+  marginTop: "40px",
   display: "flex",
   justifyContent: "center",
-  gap: "20px",
-  marginTop: "20px",
+  gap: "10px",
 };
-

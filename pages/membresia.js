@@ -1,101 +1,110 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { db, auth } from "../firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { useRouter } from "next/router";
 
 export default function Membresia() {
-  const router = useRouter();
   const [usuario, setUsuario] = useState(null);
-  const [membresiaActiva, setMembresiaActiva] = useState(false);
-  const [fechaExpiracion, setFechaExpiracion] = useState(null);
-  const [mensaje, setMensaje] = useState("");
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { error } = router.query;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUsuario(user);
-        await cargarEstadoMembresia(user.email);
-      } else {
-        router.push("/login");
+      if (!user) {
+        setUsuario(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const ref = doc(db, "usuarios", user.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          setUsuario({ id: user.uid, ...snap.data() });
+        } else {
+          setUsuario(null);
+        }
+      } catch (err) {
+        console.error("❌ Error al obtener datos del usuario:", err);
+        setUsuario(null);
+      } finally {
+        setLoading(false);
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  const cargarEstadoMembresia = async (email) => {
-    try {
-      const usuarioRef = doc(db, "usuarios", email);
-      const docSnap = await getDoc(usuarioRef);
-  
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-  
-        if (data.membresiaActiva !== undefined && data.fechaExpiracion) {
-          setMembresiaActiva(data.membresiaActiva);
-  
-          const fechaExpiracionDB = data.fechaExpiracion.toDate();
-          setFechaExpiracion(fechaExpiracionDB);
-  
-          const hoy = new Date();
-          if (!data.membresiaActiva && hoy > fechaExpiracionDB) {
-            setMensaje("No tenés una membresía activa para leer ese libro.");
-          } else if (!data.membresiaActiva) {
-            setMensaje(`Tu acceso expira el ${fechaExpiracionDB.toLocaleDateString()}.`);
-          } else {
-            setMensaje("Tu membresía está activa. Disfruta de todo el catálogo.");
-          }
-        } else {
-          setMensaje("No tenés una membresía activa para leer ese libro.");
-        }
-      } else {
-        setMensaje("El usuario no existe en Firestore.");
+  const mostrarMensaje = () => {
+    if (loading) return "Cargando datos de la membresía...";
+
+    if (!usuario) {
+      if (error === "registro") {
+        return "⚠️ No pudimos encontrar tu usuario. Contactá a soporte o registrate nuevamente.";
       }
-    } catch (err) {
-      console.error("Error al obtener la membresía:", err);
-      setMensaje("Error al cargar el estado de la membresía.");
+      return "⚠️ No pudimos cargar los datos del usuario. Por favor, revisá tu conexión o volvé a intentarlo.";
     }
+
+    if (!usuario.membresiaActiva || error === "membresia") {
+      return "⚠️ Parece que no tenés una membresía activa.";
+    }
+
+    return null;
   };
+
+  const mensaje = mostrarMensaje();
 
   return (
     <div style={containerStyle}>
-      <h1>Estado de Membresía</h1>
-      <p>{mensaje}</p>
-      {!membresiaActiva && (
-        <button style={buttonStyle} onClick={() => router.push("/membresia/planes")}>
-          Activar Membresía
-        </button>
+      <h2>📄 Estado de Membresía</h2>
+      {mensaje && <p style={errorStyle}>{mensaje}</p>}
+
+      {usuario && usuario.membresiaActiva && (
+        <div style={{ marginBottom: "20px" }}>
+          <p>Estado de tu membresía: <strong style={{ color: "green" }}>Activa</strong></p>
+          <p>Nombre: <strong>{usuario.nombre}</strong></p>
+          <p>Apellido: <strong>{usuario.apellido}</strong></p>
+        </div>
       )}
 
-      {/* Botones de navegación */}
-      <div style={buttonContainer}>
-        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Página Principal</button>
-        <button onClick={() => router.push("/perfil")} style={buttonStyle}>👤 Mi Perfil</button>
+      <div style={buttonContainerStyle}>
+        <button onClick={() => router.push("/")} style={buttonStyle}>Ir a la página principal</button>
+        <button onClick={() => router.push("/perfil")} style={buttonStyle}>Mi perfil</button>
       </div>
     </div>
   );
 }
 
 const containerStyle = {
+  maxWidth: "600px",
+  margin: "0 auto",
   padding: "20px",
+  backgroundColor: "#f9f9f9",
+  borderRadius: "10px",
   textAlign: "center",
 };
 
-const buttonContainer = {
+const errorStyle = {
+  color: "red",
+  fontWeight: "bold",
+  marginBottom: "20px",
+};
+
+const buttonContainerStyle = {
   display: "flex",
   justifyContent: "center",
-  gap: "20px",
-  marginTop: "20px",
+  gap: "10px",
+  marginTop: "30px",
 };
 
 const buttonStyle = {
-  padding: "10px 15px",
+  padding: "10px 20px",
   fontSize: "16px",
-  margin: "10px",
-  border: "none",
-  cursor: "pointer",
   backgroundColor: "#007bff",
   color: "white",
+  border: "none",
   borderRadius: "5px",
+  cursor: "pointer",
 };

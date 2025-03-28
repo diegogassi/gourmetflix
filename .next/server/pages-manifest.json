@@ -1,14 +1,8 @@
 {
   "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
-  "/detalle/[id]": "pages/detalle/[id].js",
-  "/login": "pages/login.js",
+  "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/perfil": "pages/perfil.js",
-  "/admin": "pages/admin.js",
-  "/admin/usuarios": "pages/admin/usuarios.js",
-  "/catalogo": "pages/catalogo.js",
-  "/membresia": "pages/membresia.js",
-  "/lector": "pages/lector.js"
+  "/login": "pages/login.js",
+  "/perfil": "pages/perfil.js"
 }
