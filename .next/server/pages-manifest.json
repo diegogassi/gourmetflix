@@ -3,6 +3,10 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
+  "/membresia": "pages/membresia.js",
   "/login": "pages/login.js",
-  "/perfil": "pages/perfil.js"
+  "/perfil": "pages/perfil.js",
+  "/catalogo": "pages/catalogo.js",
+  "/detalle/[id]": "pages/detalle/[id].js",
+  "/lector": "pages/lector.js"
 }

@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import ePub from "epubjs";
 import { auth, db } from "../firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 
 export default function Lector() {
   const router = useRouter();
@@ -12,60 +16,99 @@ export default function Lector() {
   const [book, setBook] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        console.log("🔐 Usuario autenticado:", user.uid);
+
+        try {
+          const userRef = doc(db, "usuarios", user.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            console.log("📄 Datos obtenidos del usuario:", userData);
+
+            if (!userData.membresiaActiva) {
+              console.warn("⛔ Membresía inactiva para este usuario");
+              router.push("/membresia");
+              return;
+            }
+
+            if (!file) return;
+            console.log("📖 Archivo EPUB recibido en el lector:", file);
+
+            const newBook = ePub(file);
+            setBook(newBook);
+
+            const viewer = document.getElementById("viewer");
+            if (viewer) {
+              const newRendition = newBook.renderTo(viewer, {
+                width: "100%",
+                height: "75vh",
+                flow: "paginated",
+              });
+
+              // Cargar posición guardada
+              const libroKey = file.split("/").pop(); // ej: 'el-libro.epub'
+              const posicionGuardada = userData.ultimaLectura?.[libroKey];
+              if (posicionGuardada) {
+                console.log(`🔁 Retomando desde la página: ${posicionGuardada}`);
+                newRendition.display(posicionGuardada);
+              } else {
+                newRendition.display();
+              }
+
+              newRendition.on("relocated", async (location) => {
+                const nuevaPos = location?.start?.cfi;
+                if (!nuevaPos) return;
+
+                const nuevaLectura = {
+                  ...(userData.ultimaLectura || {}),
+                  [libroKey]: nuevaPos,
+                };
+
+                await updateDoc(userRef, { ultimaLectura: nuevaLectura });
+                console.log("💾 Posición guardada:", nuevaPos);
+              });
+
+              setRendition(newRendition);
+            }
+          } else {
+            console.log("👤 Usuario no registrado en Firestore. Redirigiendo a registro...");
+            router.push("/registro");
+          }
+        } catch (err) {
+          console.error("❌ Error al acceder a Firestore:", err);
+          alert("Ocurrió un error cargando tu información. Intentalo más tarde.");
+        }
+      } else {
+        console.log("🚪 Usuario no autenticado. Redirigiendo a login...");
         router.push("/login");
-        return;
-      }
-
-      const ref = doc(db, "usuarios", user.uid);
-      const snap = await getDoc(ref);
-
-      if (!snap.exists()) {
-        console.log("👤 Usuario no registrado en Firestore. Redirigiendo a registro...");
-        router.push("/registro");
-        return;
-      }
-
-      const userData = snap.data();
-      if (!userData.membresiaActiva) {
-        console.log("⛔ Membresía inactiva para este usuario");
-        router.push("/membresia?error=membresia");
-        return;
-      }
-
-      if (!file) return;
-
-      console.log("📖 Archivo EPUB recibido en el lector:", file);
-
-      const newBook = ePub(file);
-      setBook(newBook);
-
-      const viewer = document.getElementById("viewer");
-      if (viewer) {
-        const newRendition = newBook.renderTo(viewer, {
-          width: "100%",
-          height: "75vh",
-          flow: "paginated",
-        });
-
-        newRendition.display();
-        setRendition(newRendition);
       }
     });
 
     return () => unsubscribe();
   }, [file]);
 
-  const nextPage = () => rendition && rendition.next();
-  const prevPage = () => rendition && rendition.prev();
+  const nextPage = () => {
+    if (rendition) {
+      rendition.next();
+    }
+  };
+
+  const prevPage = () => {
+    if (rendition) {
+      rendition.prev();
+    }
+  };
 
   return (
     <div style={containerStyle}>
       <div id="viewer" style={viewerStyle}></div>
+
       <div style={buttonContainerStyle}>
-        <button onClick={() => router.push("/")} style={buttonStyle}>🏠 Página Principal</button>
-        <button onClick={() => router.push("/catalogo")} style={buttonStyle}>📚 Catálogo</button>
+        <button onClick={() => router.push("/")} style={buttonStyle2}>Página principal</button>
+        <button onClick={() => router.push("/catalogo")} style={buttonStyle2}>Catálogo</button>
         <button onClick={prevPage} style={buttonStyle}>⬅ Anterior</button>
         <button onClick={nextPage} style={buttonStyle}>Siguiente ➡</button>
       </div>
@@ -94,12 +137,23 @@ const buttonContainerStyle = {
   width: "100%",
   display: "flex",
   justifyContent: "center",
-  flexWrap: "wrap",
-  padding: "30px 0 10px 0",
+  padding: "100px 0 10px 0",
   backgroundColor: "#fff",
+  flexWrap: "wrap",
 };
 
 const buttonStyle = {
+  padding: "10px 5%",
+  fontSize: "16px",
+  border: "none",
+  cursor: "pointer",
+  backgroundColor: "#007bff",
+  color: "white",
+  borderRadius: "5px",
+  margin: "0 10px",
+};
+
+const buttonStyle2 = {
   padding: "10px 20px",
   fontSize: "16px",
   border: "none",
@@ -107,5 +161,5 @@ const buttonStyle = {
   backgroundColor: "#007bff",
   color: "white",
   borderRadius: "5px",
-  margin: "10px",
+  margin: "0 10px",
 };
