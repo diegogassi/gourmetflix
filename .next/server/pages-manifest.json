@@ -2,11 +2,9 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
   "/membresia": "pages/membresia.js",
+  "/admin": "pages/admin.js",
+  "/": "pages/index.js",
   "/login": "pages/login.js",
-  "/perfil": "pages/perfil.js",
-  "/catalogo": "pages/catalogo.js",
-  "/detalle/[id]": "pages/detalle/[id].js",
-  "/lector": "pages/lector.js"
+  "/admin/libros": "pages/admin/libros.js"
 }
